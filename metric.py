@@ -23,7 +23,6 @@ class ExecutionBlock:
         for x in self.metrics:
             out_file.write(x.get_csv_string(self.get_sum(), total, prev_sum))
             prev_sum = x.nanotime
-            print prev_sum
 
         out_file.write('\n')
 

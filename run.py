@@ -67,8 +67,6 @@ if __name__ == '__main__':
     for x in eblocks:
         total = total + x.get_sum()
 
-    print 'total = ', total
-
     out_file.write('EBID, MODULE_NAME, NANO_TIME, IN_RECORD, OUT_RECORD, REAL_NANOTIME, EB RATE, RATE\n\n')
     for x in eblocks:
         x.write_csv_file(out_file, total)
