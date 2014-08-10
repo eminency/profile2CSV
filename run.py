@@ -12,6 +12,9 @@ exec_class_map = {
     'HashShuffleFileWriteExec': HashShuffleFileWriteExecMetric,
     'HashJoinExec': HashJoinExecMetric,
     'StoreTableExec': StoreTableExecMetric,
+    'ExternalSortExec': ExternalSortExecMetric,
+    'HashAggregateExec': HashAggregateExecMetric,
+    'RangeShuffleFileWriteExec': RangeShuffleFileWriteExecMetric,
     'total': TotalMetric
 }
 

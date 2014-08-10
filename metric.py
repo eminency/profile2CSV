@@ -196,7 +196,7 @@ class RawFileScannerMetric(BaseModuleMetric):
 
         next_data = self.each_method_data['next']
         real_next_data = next_data - read_data - make_tuple_data - prev_sum
-        next_str = self.make_basic_csv_str('SeqScanExec.next', next_data, real_next_data, eb_total, total)
+        next_str = self.make_basic_csv_str('RawFileScanner.next', next_data, real_next_data, eb_total, total)
 
         real_sum = sum((read_data, make_tuple_data, real_next_data))
         sum_str = ',SUM,%ld,%ld,%ld,%ld,%f,%f\n' % (self.nanotime, self.in_record, self.out_record, real_sum
@@ -273,6 +273,111 @@ class StoreTableExecMetric(BaseModuleMetric):
                                                                       , real_next_data*100 / float(total))
 
         return next_str+sum_str
+
+
+class RangeShuffleFileWriteExecMetric(BaseModuleMetric):
+    def __init__(self):
+        BaseModuleMetric.__init__(self, 'RangeShuffleFileWriteExec')
+
+    def add_method_data(self, name, data):
+        if name == 'next':
+            self.nanotime = data
+            self.each_method_data[name] = data
+        elif name == 'inTuples':
+            self.in_record = data
+        elif name == 'outTuples':
+            self.out_record = data
+        elif name == 'init':
+            pass
+        else:
+            self.each_method_data[name] = data
+
+    def get_csv_string(self, eb_total, total, prev_sum):
+        next_data = self.each_method_data['next']
+        real_next_data = next_data - prev_sum
+        next_str = self.make_basic_csv_str('RangeShuffleFileWriteExec.next', next_data, real_next_data, eb_total, total)
+
+        real_sum = real_next_data
+        sum_str = ',SUM,%ld,%ld,%ld,%ld,%f,%f\n' % (self.nanotime, self.in_record, self.out_record, real_sum
+                                                                      , real_sum*100 / float(eb_total)
+                                                                      , real_sum*100 / float(total))
+
+        return next_str+sum_str
+
+
+class HashAggregateExecMetric(BaseModuleMetric):
+    def __init__(self):
+        BaseModuleMetric.__init__(self, 'HashAggregateExec')
+
+    def add_method_data(self, name, data):
+        if name == 'next':
+            self.nanotime = data
+            self.each_method_data[name] = data
+        elif name == 'inTuples':
+            self.in_record = data
+        elif name == 'outTuples':
+            self.out_record = data
+        elif name == 'computeJoin':
+            pass
+        else:
+            self.each_method_data[name] = data
+
+    def get_csv_string(self, eb_total, total, prev_sum):
+        compute_data = self.each_method_data['compute']
+        real_compute_data = compute_data - prev_sum
+        compute_str = self.make_basic_csv_str('HashAggregateExec.compute', compute_data, real_compute_data, eb_total, total)
+
+        next_data = self.each_method_data['next']
+        real_next_data = next_data - compute_data
+        next_str = self.make_basic_csv_str('ExternalSortExec.next', next_data, real_next_data, eb_total, total)
+
+        real_sum = sum((real_compute_data, real_next_data))
+        sum_str = ',SUM,%ld,%ld,%ld,%ld,%f,%f\n' % (self.nanotime, self.in_record, self.out_record, real_sum
+                                                                      , real_sum*100 / float(eb_total)
+                                                                      , real_sum*100 / float(total))
+
+        return compute_str+next_str+sum_str
+
+
+class ExternalSortExecMetric(BaseModuleMetric):
+    def __init__(self):
+        BaseModuleMetric.__init__(self, 'ExternalSortExec')
+
+    def add_method_data(self, name, data):
+        if name == 'next':
+            self.nanotime = data
+            self.each_method_data[name] = data
+        elif name == 'inTuples':
+            self.in_record = data
+        elif name == 'outTuples':
+            self.out_record = data
+        elif (name == 'Sort' or name == 'SortScan' or name == 'MemorySort' or name == 'SortWrite') and data == 0:
+            pass
+        elif name == 'init':
+            pass
+        else:
+            self.each_method_data[name] = data
+
+    def get_csv_string(self, eb_total, total, prev_sum):
+
+        if self.each_method_data.has_key('SortScan'):
+            sortscan_data = self.each_method_data['SortScan']
+            real_sortscan_data = sortscan_data - prev_sum
+            sortscan_str = self.make_basic_csv_str('ExternalSortExec.SortScan', sortscan_data, real_sortscan_data, eb_total, total)
+        else:
+            sortscan_data = real_sortscan_data = 0
+            sortscan_str = ''
+
+        next_data = self.each_method_data['next']
+        real_next_data = next_data - sortscan_data
+        next_str = self.make_basic_csv_str('ExternalSortExec.next', next_data, real_next_data, eb_total, total)
+
+        real_sum = sum((real_sortscan_data, real_next_data))
+        sum_str = ',SUM,%ld,%ld,%ld,%ld,%f,%f\n' % (self.nanotime, self.in_record, self.out_record, real_sum
+                                                                      , real_sum*100 / float(eb_total)
+                                                                      , real_sum*100 / float(total))
+
+        return sortscan_str+next_str+sum_str
 
 
 class TotalMetric(BaseModuleMetric):
