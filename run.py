@@ -23,9 +23,9 @@ def usage():
     sys.exit(0)
 
 
-def process_class_data(exec_class, data, cur, ebid):
+def process_class_data(class_name, data, cur, ebid):
     # making class instance
-    mm = exec_class()
+    mm = exec_class_map[class_name]()
 
     for line in data:
         try:
@@ -87,7 +87,8 @@ if __name__ == '__main__':
             class_name = each_class_data[0][0].split('.')[0]
             cur.execute('INSERT INTO class_data (class, ebid) values (?, ?)', (class_name, ebid))
             try:
-                metric = process_class_data(exec_class_map[class_name], each_class_data, cur, ebid)
+                metric = process_class_data(class_name, each_class_data, cur, ebid)
+
                 # print metric
                 eb.add_metric(metric)
 
