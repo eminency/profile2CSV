@@ -24,9 +24,9 @@ def usage():
     sys.exit(0)
 
 
-def process_class_data(exec_class, data):
+def process_class_data(class_name, data):
     # making class instance
-    mm = exec_class()
+    mm = exec_class_map[class_name]()
 
     for line in data:
         try:
@@ -57,7 +57,7 @@ if __name__ == '__main__':
         for each_class_data in eb_data[1:]:
             class_name = each_class_data[0][0].split('.')[0]
             try:
-                metric = process_class_data(exec_class_map[class_name], each_class_data)
+                metric = process_class_data(class_name, each_class_data)
                 # print metric
                 eb.add_metric(metric)
 
