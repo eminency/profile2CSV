@@ -384,9 +384,10 @@ class TotalMetric(BaseModuleMetric):
     def __init__(self):
         BaseModuleMetric.__init__(self, 'Total')
 
-    def add_method_data(self, name, data):
+    def add_method_data(self, name, data, cur, ebid):
         if name == 'total':
             self.nanotime = data
+            cur.execute('UPDATE class_data SET nanotime=? WHERE ebid = ? and class=?', (data, ebid, 'total'))
             self.each_method_data[name] = data
         elif name == 'fetch' and data < 0:
             self.each_method_data[name] = 0
