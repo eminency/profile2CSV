@@ -231,7 +231,7 @@ class RangeShuffleFileWriteExecMetric(BaseModuleMetric):
 
         next_data = cur.execute(SQL_GET_METHOD_NANOTIME, (ebid, 'RangeShuffleFileWriteExec', 'next')).fetchone()[0]
         real_next_data = next_data - prev_sum
-        next_str = self.make_basic_csv_str('RangeShuffleFileWriteExec.next', next_data, real_next_data, eb_total, total)
+        next_str = make_basic_csv_str('RangeShuffleFileWriteExec.next', next_data, real_next_data, eb_total, total)
 
         return {'method_str':next_str, 'sum_val':real_next_data}
 
