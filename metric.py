@@ -255,7 +255,7 @@ class HashAggregateExecMetric(BaseModuleMetric):
 
         next_data = cur.execute(SQL_GET_METHOD_NANOTIME, (ebid, 'HashAggregateExec', 'next')).fetchone()[0]
         real_next_data = next_data - compute_data
-        next_str = make_basic_csv_str('ExternalSortExec.next', next_data, real_next_data, eb_total, total)
+        next_str = make_basic_csv_str('HashAggregateExec.next', next_data, real_next_data, eb_total, total)
 
         real_sum = sum((real_compute_data, real_next_data))
 
