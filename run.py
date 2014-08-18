@@ -4,7 +4,7 @@ import sys, json, sqlite3
 
 from metric import *
 
-exec_class_map = {
+metric_map = {
     'CSVScanner': CSVscannerMetric,
     'RawFileScanner': RawFileScannerMetric,
     'SeqScanExec': SeqScanExecMetric,
@@ -25,17 +25,17 @@ def usage():
 
 def process_class_data(class_name, data, cur, ebid):
     # making class instance
-    mm = exec_class_map[class_name]()
+    class_metric = metric_map[class_name]()
 
     for line in data:
         try:
             method_name = line[0].split('.')[1]
-            mm.add_method_data(method_name, line[1])
+            class_metric.add_method_data(method_name, line[1], cur, ebid)
         except IndexError:
             if line[0] == 'total' or line[0] == 'fetch':
-                mm.add_method_data(line[0], line[1], cur, ebid)
+                class_metric.add_method_data(line[0], line[1], cur, ebid)
 
-    return mm
+    return class_metric
 
 
 def make_db():
@@ -48,7 +48,8 @@ def make_db():
     cur.execute('CREATE TABLE eb (seq INT, ebid INT)')
 
     cur.execute('''CREATE TABLE class_data
-			(class TEXT, 
+			(seq INT,
+			class TEXT,
 			nanotime LONG, 
 			realnano LONG,
 			in_record INT,
@@ -79,37 +80,58 @@ if __name__ == '__main__':
 
     seq = 1
     for eb_data in json_obj:
-        eb = ExecutionBlock(eb_data[0])
         ebid = int(eb_data[0][2:])
+
+        eb = ExecutionBlock(ebid, cur)
+
         cur.execute('INSERT INTO eb values (?, ?)', (seq, ebid))
         # print '----', eb_data[0], '----'
         for each_class_data in eb_data[1:]:
+
             class_name = each_class_data[0][0].split('.')[0]
-            cur.execute('INSERT INTO class_data (class, ebid) values (?, ?)', (class_name, ebid))
+            cur.execute('INSERT INTO class_data (seq, class, ebid) values (?, ?, ?)', (seq, class_name, ebid))
+            seq = seq + 1
+
             try:
                 metric = process_class_data(class_name, each_class_data, cur, ebid)
-
-                # print metric
                 eb.add_metric(metric)
-
             except KeyError:
                 print 'Error : not implemented for',class_name
 
         eblocks.append(eb)
-        seq = seq + 1
 
-    for x in cur.execute('SELECT * FROM class_data'):
-        print x
+  #  for x in cur.execute('SELECT * FROM method_data'):
+   #     print x
 
-    total = 0
-    for x in eblocks:
-        total = total + x.get_sum()
+    total = cur.execute('SELECT sum(nanotime) FROM method_data WHERE class=? and method=?', ('Total', 'total')).fetchone()[0]
 
     out_file.write('EBID, MODULE_NAME, NANO_TIME, IN_RECORD, OUT_RECORD, REAL_NANOTIME, EB RATE, RATE\n\n')
-    for x in eblocks:
-        x.write_csv_file(out_file, total)
+
+    for eb in eblocks:
+        class_records = [x for x in cur.execute('SELECT * FROM class_data WHERE ebid=? ORDER BY seq', (eb.id,))]
+        eb_total = cur.execute('SELECT nanotime FROM class_data WHERE ebid=? and class=?', (eb.id, 'total')).fetchone()[0]
+        out_file.write('EB'+str(eb.id))
+        prev_sum = 0
+        for record in class_records:
+            cname = record[1]
+            csv_string = metric_map[cname].get_method_csv_string(cur, eb.id, eb_total, total, prev_sum)
+
+            out_file.write(csv_string['method_str'])
+
+            prev_sum = real_sum = csv_string['sum_val']
+            try:
+                sum_str = ',SUM,%ld,%ld,%ld,%ld,%f,%f\n' % (record[2], record[4], record[5], real_sum
+                                                                      , real_sum*100 / float(eb_total)
+                                                                      , real_sum*100 / float(total))
+            except TypeError:
+                sum_str = ',SUM,%ld,,,%ld,%f,%f\n' % (record[2], real_sum, real_sum*100 / float(eb_total), real_sum*100 / float(total))
+
+            out_file.write(sum_str)
+
+        out_file.write('\n')
 
     out_file.write(',Total,,'+str(total))
 
+    cur.close()
     in_file.close()
     out_file.close()
