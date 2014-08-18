@@ -118,7 +118,7 @@ if __name__ == '__main__':
 
             out_file.write(csv_string['method_str'])
 
-            prev_sum = real_sum = csv_string['sum_val']
+            real_sum = csv_string['sum_val']
             try:
                 sum_str = ',SUM,%ld,%ld,%ld,%ld,%f,%f\n' % (record[2], record[4], record[5], real_sum
                                                                       , real_sum*100 / float(eb_total)
@@ -126,6 +126,8 @@ if __name__ == '__main__':
             except TypeError:
                 sum_str = ',SUM,%ld,,,%ld,%f,%f\n' % (record[2], real_sum, real_sum*100 / float(eb_total), real_sum*100 / float(total))
 
+            prev_sum = record[2]
+            
             out_file.write(sum_str)
 
         out_file.write('\n')
